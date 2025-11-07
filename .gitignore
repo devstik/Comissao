@@ -1,0 +1,17 @@
+# Ignore pastas de build e dist
+build/
+dist/
+*.spec
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ambientes virtuais
+venv/
+.env/
+
+# Outros arquivos grandes ou locais
+*.db
+*.sqlite3
