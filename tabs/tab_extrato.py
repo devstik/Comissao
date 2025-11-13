@@ -181,6 +181,12 @@ class TabExtrato(QWidget):
         self.btn_voltar.setObjectName("btnGhost")
         self.btn_voltar.setMinimumWidth(140)
 
+        self.btn_sincronizar = QPushButton("Sincronizar")
+        self.btn_sincronizar.setObjectName("btnWarning")
+        self.btn_sincronizar.setMinimumWidth(120)
+
+
+
         # Adiciona todos na linha
         btn_layout.addWidget(self.btn_refresh)
         btn_layout.addWidget(self.btn_salvar)
@@ -189,6 +195,7 @@ class TabExtrato(QWidget):
         btn_layout.addWidget(self.btn_enviar)
         btn_layout.addWidget(self.btn_voltar)
         btn_layout.addWidget(btn_aplicar_todos)
+        btn_layout.addWidget(self.btn_sincronizar)
 
         # Conectar eventos
         self.btn_refresh.clicked.connect(self.refresh_extrato)
@@ -197,6 +204,7 @@ class TabExtrato(QWidget):
         self.btn_enviar.clicked.connect(self.on_enviar_emails)
         self.btn_voltar.clicked.connect(self.voltar_para_consulta)
         btn_aplicar_todos.clicked.connect(self._aplicar_pct_todos)
+        self.btn_sincronizar.clicked.connect(self.abrir_sincronizacao)
 
         # Permissões de botões
         self._configure_button_permissions()
@@ -213,12 +221,13 @@ class TabExtrato(QWidget):
             self.btn_consol.show()
             self.btn_enviar.show()
             self.btn_voltar.hide()
+            self.btn_sincronizar.hide()
         else:
             self.btn_salvar.hide()
             self.btn_validar.hide()
             self.btn_consol.hide()
             self.btn_enviar.hide()
-    
+
     def _create_table(self, layout):
         """Cria a tabela de extrato"""
         self.tbl_extrato = QTableView()
@@ -253,6 +262,14 @@ class TabExtrato(QWidget):
         self.lbl_ate_emissao.setEnabled(checked)
         self.refresh_extrato()
     
+    def abrir_sincronizacao(self):
+        """Abre dialog de sincronização"""
+        from tabs.sincronizacao import DialogSincronizacao
+        dialog = DialogSincronizacao(self, self.cfg)
+        dialog.exec()
+
+        self.refresh_extrato()
+
     def refresh_extrato(self):
         """Carrega dados do extrato do banco COM FEEDBACK"""
         parent_window = self.window()
@@ -780,47 +797,115 @@ class TabExtrato(QWidget):
             QMessageBox.warning(self, "Aviso", f"Erro ao enviar e-mails:\n{e}")
     
     def voltar_para_consulta(self):
-        """Retorna registros selecionados para a aba de consulta COM FEEDBACK"""
+        """
+        Remove registros do EXTRATO (deleta do banco)
+        Após deletar, os títulos poderão ser buscados novamente na janela de Consulta
+        """
         sel = self.tbl_extrato.selectionModel().selectedRows()
         if not sel:
             QMessageBox.information(self, "Extrato", "Nenhum item selecionado.")
             return
 
+        # 🔹 CONFIRMAÇÃO com aviso claro
+        reply = QMessageBox.question(
+            self,
+            "Remover do Extrato",
+            f"⚠️ Deseja remover {len(sel)} registro(s) do extrato?\n\n"
+            f"Os registros serão DELETADOS do banco de dados.\n\n"
+            f"Você poderá adicioná-los novamente pela janela de Consulta,\n"
+            f"buscando pelo período de RECEBIMENTO correto.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.No:
+            return
+
         parent_window = self.window()
-        loading = LoadingOverlay(parent_window, f"{Icons.BACK} Movendo para consulta")
+        loading = LoadingOverlay(parent_window, f"{Icons.LOADING} Removendo do extrato")
         loading.show_overlay()
 
         try:
-            # Retorna (df_selecionado, indices_reais)
-            idxs_visuais = [i.row() for i in sel]
-            df_sel = self.df_extrato.iloc[idxs_visuais].copy()
-            idxs_reais = self.df_extrato.index[idxs_visuais]
-
-            # Remove do extrato
-            self.df_extrato = self.df_extrato.drop(index=idxs_reais).reset_index(drop=True)
-
-            # Atualiza tabela
-            df_show = apply_display_formats(self.df_extrato.copy())
-            cols_show = self._get_display_columns(df_show.columns)
-            model = EditableTableModel(cols_show, df_show[cols_show].values.tolist())
-
-            if self.role not in ("gestora", "admin"):
-                model.set_all_readonly(True)
-            else:
-                model.set_columns_readonly([h for h in cols_show if h not in {"% Comissão", "Valor Comissão", "Observação"}])
-
-            self.tbl_extrato.setModel(model)
-            self.tbl_extrato.resizeColumnsToContents()
-
+            model: EditableTableModel = self.tbl_extrato.model()
+            if model is None:
+                loading.close_overlay()
+                return
+            
+            hdr = model.headers
+            try:
+                i_db = hdr.index("DBId")
+            except ValueError:
+                loading.close_overlay()
+                QMessageBox.critical(self, "Erro", "Coluna DBId não encontrada!")
+                return
+            
+            # 🔹 Coleta os IDs do banco (DBId) dos registros selecionados
+            ids_deletar = []
+            for s in sel:
+                row = model.rows[s.row()]
+                db_id = int(row[i_db])
+                ids_deletar.append(db_id)
+            
+            # 🔹 DELETA do banco de dados
+            deletados = 0
+            with get_conn(self.cfg) as conn:
+                cur = conn.cursor()
+                total = len(ids_deletar)
+                
+                for i, db_id in enumerate(ids_deletar, 1):
+                    loading.update_message(f"{Icons.LOADING} Removendo {i}/{total}")
+                    
+                    # Verifica se não está consolidado (segurança)
+                    cur.execute("""
+                        SELECT Consolidado 
+                        FROM dbo.Stik_Extrato_Comissoes 
+                        WHERE Id = ?
+                    """, db_id)
+                    
+                    result = cur.fetchone()
+                    if result and result[0] == 1:
+                        # Está consolidado, não pode deletar
+                        continue
+                    
+                    # Deleta do banco
+                    cur.execute("""
+                        DELETE FROM dbo.Stik_Extrato_Comissoes 
+                        WHERE Id = ? AND Consolidado = 0
+                    """, db_id)
+                    
+                    deletados += cur.rowcount
+                
+                conn.commit()
+            
             loading.close_overlay()
-            QuickFeedback.show(self, f"{len(df_sel)} registro(s) retornado(s) para consulta", success=True)
             
-            return df_sel
-            
+            if deletados > 0:
+                QuickFeedback.show(self, f"{deletados} registro(s) removido(s) do extrato", success=True)
+                self.refresh_extrato()  # Atualiza a tela
+                
+                # 🔹 Mensagem informativa
+                QMessageBox.information(
+                    self,
+                    "Sucesso",
+                    f"✅ {deletados} registro(s) removido(s) do extrato.\n\n"
+                    f"Agora você pode:\n"
+                    f"1. Ir na aba CONSULTA\n"
+                    f"2. Filtrar pelo período de RECEBIMENTO correto\n"
+                    f"3. Adicionar os títulos novamente"
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Aviso",
+                    "Nenhum registro foi removido.\n\n"
+                    "Possíveis motivos:\n"
+                    "- Os registros já estão consolidados\n"
+                    "- Já foram deletados anteriormente"
+                )
+                
         except Exception as e:
             loading.close_overlay()
-            QMessageBox.critical(self, "Erro", f"Erro ao voltar para consulta: {e}")
-            return pd.DataFrame()
+            QMessageBox.critical(self, "Erro", f"Erro ao remover do extrato:\n{e}")
     
     def get_filtered_data(self) -> pd.DataFrame:
         """Retorna os dados filtrados atualmente"""

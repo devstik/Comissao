@@ -1,7 +1,6 @@
-
 """
 Aba de Consulta - Busca e adição de lançamentos ao extrato
-RESPONSIVA | OTIMIZADA | COM FEEDBACKS | CORRIGIDA
+RESPONSIVA | OTIMIZADA | COM FEEDBACKS | CORRIGIDA v2
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
@@ -74,29 +73,22 @@ class TabConsulta(QWidget):
         # LINHA 0
         row = 0
         
-        # Filtrar por
-        filtros_layout.addWidget(QLabel("Filtrar por:"), row, 0)
-        self.cmb_tipo_data = QComboBox()
-        self.cmb_tipo_data.addItems(["Recebimento", "Emissão"])
-        self.cmb_tipo_data.setFixedWidth(120)
-        filtros_layout.addWidget(self.cmb_tipo_data, row, 1)
-
-        # Período
-        filtros_layout.addWidget(QLabel(f"{Icons.CALENDAR} Período:"), row, 2)
+        # Período de RECEBIMENTO (sempre)
+        filtros_layout.addWidget(QLabel(f"{Icons.CALENDAR} Recebimento:"), row, 0)
         self.dt_ini = QDateEdit()
         self.dt_ini.setDisplayFormat("dd/MM/yyyy")
         self.dt_ini.setCalendarPopup(True)
         self.dt_ini.setDate(QDate.currentDate().addMonths(-1).addDays(1))
         self.dt_ini.setMinimumWidth(110)
-        filtros_layout.addWidget(self.dt_ini, row, 3)
+        filtros_layout.addWidget(self.dt_ini, row, 1)
 
-        filtros_layout.addWidget(QLabel("até"), row, 4)
+        filtros_layout.addWidget(QLabel("até"), row, 2)
         self.dt_fim = QDateEdit()
         self.dt_fim.setDisplayFormat("dd/MM/yyyy")
         self.dt_fim.setCalendarPopup(True)
         self.dt_fim.setDate(QDate.currentDate())
         self.dt_fim.setMinimumWidth(110)
-        filtros_layout.addWidget(self.dt_fim, row, 5)
+        filtros_layout.addWidget(self.dt_fim, row, 3)
 
         # LINHA 1
         row = 1
@@ -172,10 +164,9 @@ class TabConsulta(QWidget):
         loading.show_overlay()
 
         try:
-            # Captura as datas do período
+            # Captura as datas do período de RECEBIMENTO
             di = self.dt_ini.date().toString('yyyyMMdd')
             df_ = self.dt_fim.date().toString('yyyyMMdd')
-            tipo_filtro = self.cmb_tipo_data.currentText()
             
             vendedor = self.cmb_vendedor.currentText()
             if vendedor == "(todos)":
@@ -183,7 +174,7 @@ class TabConsulta(QWidget):
 
             loading.update_message(f"{Icons.LOADING} Consultando banco de dados")
             
-            # Executa a query (OTIMIZADO - apenas uma chamada)
+            # Executa a query (sempre por RECEBIMENTO)
             sql, params = build_query_866(di, df_, vendedor)
             num_markers = sql.count("?")
             if len(params) > num_markers:
@@ -207,20 +198,6 @@ class TabConsulta(QWidget):
             
             loading.update_message(f"{Icons.LOADING} Processando dados")
             
-            # Filtro por tipo de data (Emissão)
-            if tipo_filtro == "Emissão" and "Emissão" in df_res.columns:
-                dt_inicio = pd.to_datetime(di, format='%Y%m%d')
-                dt_fim_periodo = pd.to_datetime(df_, format='%Y%m%d')
-                
-                df_res["_Emissao_dt"] = pd.to_datetime(
-                    df_res["Emissão"], 
-                    format='%d/%m/%Y',
-                    errors='coerce'
-                )
-                mask = (df_res["_Emissao_dt"] >= dt_inicio) & (df_res["_Emissao_dt"] <= dt_fim_periodo)
-                df_res = df_res[mask].copy()
-                df_res.drop(columns=["_Emissao_dt"], inplace=True)
-            
             # Adiciona % Percentual Padrão
             if "Percentual_Comissao" in df_res.columns:
                 df_res["% Percentual Padrão"] = df_res["Percentual_Comissao"].astype(float).round(4)
@@ -232,25 +209,38 @@ class TabConsulta(QWidget):
             # Atualiza combo de vendedores (OTIMIZADO - apenas se mudou)
             self._update_vendedor_combo(df_res)
 
-            # 🔹 CORREÇÃO: Remove itens já no extrato verificando ID + Artigo + Titulo
-            ids_artigos_titulos_rasc = self._fetch_extrato_docs_artigos_titulos_set()
+            # 🔹 CORREÇÃO v2: Remove itens já no extrato
+            # Usa chave FLEXÍVEL que detecta parcelas corretamente
+            ids_extrato = self._fetch_extrato_docs_completo()
             
-            if "ID" in df_res.columns and "Artigo" in df_res.columns and "Titulo" in df_res.columns and ids_artigos_titulos_rasc:
+            if "ID" in df_res.columns and ids_extrato:
                 len_antes = len(df_res)
                 
-                # Cria chave composta (ID, Artigo, Titulo)
+                # Normaliza data de recebimento no DataFrame
+                df_res["_Recebimento_normalizado"] = pd.to_datetime(
+                    df_res["Recebimento"], 
+                    dayfirst=True, 
+                    errors="coerce"
+                ).dt.strftime("%Y-%m-%d")  # Formato ISO padrão
+                
+                # Cria chave composta NORMALIZADA
                 df_res["_chave"] = df_res.apply(
-                    lambda x: (str(x["ID"]).strip(), str(x["Artigo"]).strip(), str(x.get("Titulo", "")).strip()), 
+                    lambda x: (
+                        str(x["ID"]).strip().lower(),
+                        str(x["Artigo"]).strip().lower(),
+                        str(x.get("Titulo", "")).strip().lower(),
+                        str(x["_Recebimento_normalizado"])
+                    ), 
                     axis=1
                 )
                 
                 # Remove registros que já estão no extrato
-                df_res = df_res[~df_res["_chave"].isin(ids_artigos_titulos_rasc)].copy()
-                df_res.drop(columns=["_chave"], inplace=True)
+                df_res = df_res[~df_res["_chave"].isin(ids_extrato)].copy()
+                df_res.drop(columns=["_chave", "_Recebimento_normalizado"], inplace=True, errors="ignore")
                 
                 removidos = len_antes - len(df_res)
                 if removidos > 0:
-                    print(f"{removidos} registro(s) já estão no extrato (removidos da consulta)")
+                    print(f"✅ {removidos} título(s) já no extrato (filtrados automaticamente)")
 
             # Aplica filtro por artigo
             chosen_artigo = self.cmb_artigo.currentText()
@@ -326,23 +316,37 @@ class TabConsulta(QWidget):
                 self.cmb_artigo.setCurrentText(cur_a)
             self.cmb_artigo.blockSignals(False)
     
-    def _fetch_extrato_docs_artigos_titulos_set(self) -> set:
+    def _fetch_extrato_docs_completo(self) -> set:
         """
-        🔹 CORREÇÃO: Busca tuplas (ID, Artigo, Titulo) já presentes no extrato
-        Isso evita duplicatas exatas mas permite mesmo ID com artigos/titulos diferentes
+        🔹 CORREÇÃO v2: Busca chave completa NORMALIZADA do extrato
+        Garante comparação correta com datas e strings normalizadas
         """
         out = set()
         try:
             with get_conn(self.cfg) as conn:
                 cur = conn.cursor()
                 cur.execute("""
-                    SELECT Doc, Artigo, Titulo 
+                    SELECT 
+                        Doc, 
+                        Artigo, 
+                        Titulo, 
+                        CONVERT(VARCHAR(10), DataRecebimento, 23) as DataRecebimentoISO
                     FROM dbo.Stik_Extrato_Comissoes 
                     WHERE Consolidado = 0
                 """)
-                out = {(str(r[0]).strip(), str(r[1]).strip(), str(r[2] or "").strip()) for r in cur.fetchall()}
+                
+                out = {
+                    (
+                        str(r[0]).strip().lower(),      # Doc
+                        str(r[1]).strip().lower(),      # Artigo
+                        str(r[2] or "").strip().lower(),  # Titulo
+                        str(r[3])                        # DataRecebimento (já em formato ISO yyyy-mm-dd)
+                    ) 
+                    for r in cur.fetchall()
+                }
         except Exception as e:
-            print(f"Erro ao buscar IDs+Artigos+Titulos do extrato: {e}")
+            print(f"⚠️ Erro ao buscar extrato: {e}")
+        
         return out
     
     def _add_expected_columns(self, df):
@@ -469,20 +473,23 @@ class TabConsulta(QWidget):
 
                     row = mt.iloc[0].to_dict()
 
-                    # Cálculos
-                    pct = br_to_decimal(
-                        view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else row.get("% Comissão", 0), 
+                    # 🔹 CORREÇÃO: Preserva % Comissão se já estiver definido
+                    pct_usuario = br_to_decimal(
+                        view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else None, 
                         4
-                    ) or Decimal('0.0000')
+                    )
+                    pct_padrao = br_to_decimal(
+                        row.get("Percentual_Comissao") or row.get("% Percentual Padrão") or 0.05, 
+                        4
+                    )
+                    
+                    # Se usuário não alterou, usa padrão. Se alterou, usa valor do usuário
+                    pct = pct_usuario if pct_usuario and pct_usuario != Decimal('0.05') else pct_padrao
                     
                     rec_liq = br_to_decimal(row.get("Rec Liquido", 0), 2) or Decimal('0.00')
                     valor_com = (rec_liq * pct / Decimal('100')).quantize(
                         Decimal('0.01'), 
                         rounding=ROUND_HALF_UP
-                    )
-                    pct_padrao = br_to_decimal(
-                        row.get("Percentual_Comissao") or row.get("% Percentual Padrão") or 0.01, 
-                        4
                     )
 
                     comp_iso = pd.to_datetime(row.get("Recebimento"), dayfirst=True, errors="coerce")
