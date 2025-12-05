@@ -107,8 +107,42 @@ class TabExtrato(QWidget):
         filtros_layout.addWidget(QLabel(f"{Icons.FILTER} Artigo:"), row, 4)
         filtros_layout.addWidget(self.cmb_artigo, row, 5, 1, 2)
 
-        # LINHA 1: Outros filtros
         row = 1
+    
+        self.chk_filtrar_recebimento = QCheckBox(f"{Icons.CALENDAR} Filtrar por recebimento:")
+        self.chk_filtrar_recebimento.setChecked(True)  
+
+        # 🔹 Define datas: INÍCIO DO MÊS até ONTEM
+        hoje = QDate.currentDate()
+        primeiro_dia_mes = QDate(hoje.year(), hoje.month(), 1)  
+        ontem = hoje.addDays(-1)  
+        
+        self.dt_recebimento_ini = QDateEdit()
+        self.dt_recebimento_ini.setDisplayFormat("dd/MM/yyyy")
+        self.dt_recebimento_ini.setCalendarPopup(True)
+        self.dt_recebimento_ini.setDate(primeiro_dia_mes)  
+        self.dt_recebimento_ini.setMinimumWidth(110)
+        self.dt_recebimento_ini.setEnabled(True)
+
+        self.lbl_ate_recebimento = QLabel("até")
+        self.lbl_ate_recebimento.setEnabled(True)
+
+        self.dt_recebimento_fim = QDateEdit()
+        self.dt_recebimento_fim.setDisplayFormat("dd/MM/yyyy")
+        self.dt_recebimento_fim.setCalendarPopup(True)
+        self.dt_recebimento_fim.setDate(ontem) 
+        self.dt_recebimento_fim.setMinimumWidth(110)
+        self.dt_recebimento_fim.setEnabled(True)
+
+        self.chk_filtrar_recebimento.toggled.connect(self._toggle_recebimento_filter)
+
+        filtros_layout.addWidget(self.chk_filtrar_recebimento, row, 0)
+        filtros_layout.addWidget(self.dt_recebimento_ini, row, 1)
+        filtros_layout.addWidget(self.lbl_ate_recebimento, row, 2)
+        filtros_layout.addWidget(self.dt_recebimento_fim, row, 3)
+        
+        # LINHA 2: Outros filtros
+        row = 2
         
         self.cmb_comp = QComboBox()
         self.cmb_comp.addItem("(todas)")
@@ -261,6 +295,13 @@ class TabExtrato(QWidget):
         self.dt_emissao_fim.setEnabled(checked)
         self.lbl_ate_emissao.setEnabled(checked)
         self.refresh_extrato()
+
+    def _toggle_recebimento_filter(self, checked):
+        """Habilita/desabilita filtro de recebimento"""
+        self.dt_recebimento_ini.setEnabled(checked)
+        self.dt_recebimento_fim.setEnabled(checked)
+        self.lbl_ate_recebimento.setEnabled(checked)
+        self.refresh_extrato()  
     
     def abrir_sincronizacao(self):
         """Abre dialog de sincronização"""
@@ -372,14 +413,32 @@ class TabExtrato(QWidget):
         comps_novos = set(c for c in df.get("Competência", pd.Series([])).dropna().unique() if c)
         if comps_novos != self._cache_competencias:
             self._cache_competencias = comps_novos
-            comps = sorted(comps_novos)
+            comps = sorted(comps_novos, reverse=True)  # 🔹 Ordem decrescente (mais recente primeiro)
+            
+            # 🔹 Determina competência atual (mês vigente)
+            from datetime import datetime
+            mes_atual = datetime.now().month
+            ano_atual = datetime.now().year
+            
+            # Mapeia mês para formato brasileiro
+            meses_br = {
+                1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+                7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+            }
+            competencia_atual = f"{meses_br[mes_atual]}-{ano_atual}"
+            
             cur_c = self.cmb_comp.currentText()
             self.cmb_comp.blockSignals(True)
             self.cmb_comp.clear()
             self.cmb_comp.addItem("(todas)")
             self.cmb_comp.addItems(comps)
-            if cur_c and cur_c in ["(todas)", *comps]:
+            
+            # 🔹 Define competência atual como padrão (se existir nos dados)
+            if competencia_atual in comps and cur_c == "(todas)":
+                self.cmb_comp.setCurrentText(competencia_atual)
+            elif cur_c and cur_c in ["(todas)", *comps]:
                 self.cmb_comp.setCurrentText(cur_c)
+            
             self.cmb_comp.blockSignals(False)
 
         # Vendedores
@@ -462,6 +521,19 @@ class TabExtrato(QWidget):
             except Exception as e:
                 print(f"Erro ao filtrar por emissão: {e}")
 
+        if self.chk_filtrar_recebimento.isChecked():
+            try:
+                data_ini = self.dt_recebimento_ini.date().toPython()
+                data_fim = self.dt_recebimento_fim.date().toPython()
+                
+                if "Recebimento" in df.columns:
+                    df_temp = df.copy()
+                    df_temp["_Recebimento_dt"] = pd.to_datetime(df_temp["Recebimento"], dayfirst=True, errors="coerce").dt.date
+                    mask = (df_temp["_Recebimento_dt"] >= data_ini) & (df_temp["_Recebimento_dt"] <= data_fim)
+                    df = df[mask]
+            except Exception as e:
+                print(f"Erro ao filtrar por recebimento: {e}")       
+
         # Aplica % padrão SOMENTE onde não há valor definido
         pct_padrao = self.spn_pct.value()
         if pct_padrao > 0 and "% Comissão" in df.columns:
@@ -485,6 +557,13 @@ class TabExtrato(QWidget):
         # 🔹 Criar model
         model = EditableTableModel(cols_show, df_show[cols_show].values.tolist())
         
+        # 🔥 NOVO: Conectar sinal ANTES de definir readonly
+        model.dataChanged.connect(
+            lambda top_left, bottom_right, roles=[]: self._recalcular_comissao_ao_editar(
+                top_left, bottom_right, model, cols_show
+            )
+        )
+        
         if self.role in ("gestora", "admin", "controladoria"):
             model.set_columns_readonly(["% Comissão", "Valor Comissão"])
         else:
@@ -497,7 +576,7 @@ class TabExtrato(QWidget):
         self.tbl_extrato.setSortingEnabled(False)
 
         if self.role in ("gestora", "admin", "controladoria"):
-            # Delegate para coluna "% Comissão" (4 casas decimais: 5,0000)
+            # Delegate para coluna "% Comissão" (2 casas decimais: 5,00)
             if "% Comissão" in cols_show:
                 col_idx = cols_show.index("% Comissão")
                 delegate_percent = DecimalDelegate(decimal_places=2, parent=self.tbl_extrato)
@@ -508,7 +587,7 @@ class TabExtrato(QWidget):
                 col_idx = cols_show.index("Valor Comissão")
                 delegate_valor = DecimalDelegate(decimal_places=2, parent=self.tbl_extrato)
                 self.tbl_extrato.setItemDelegateForColumn(col_idx, delegate_valor)
-                
+                    
         # 🔹 Restaurar larguras ou ajustar inicial
         if saved_widths:
             for col, width in saved_widths.items():
@@ -546,6 +625,62 @@ class TabExtrato(QWidget):
         except (TypeError, RuntimeError):
             pass  # Ignora se não há conexão
         header.sectionClicked.connect(on_header_clicked)
+
+    def _recalcular_comissao_ao_editar(self, top_left, bottom_right, model, cols_show):
+        """
+        🔥 Recalcula automaticamente o Valor Comissão quando % Comissão é editado
+        Usa a mesma lógica da tab_consulta: (Rec Liquido * % / 100) com ROUND_HALF_UP
+        """
+        try:
+            # Verifica se tem as colunas necessárias
+            if "% Comissão" not in cols_show or "Valor Comissão" not in cols_show or "Rec Liquido" not in cols_show:
+                return
+            
+            col_pct_idx = cols_show.index("% Comissão")
+            col_val_idx = cols_show.index("Valor Comissão")
+            col_rec_idx = cols_show.index("Rec Liquido")
+            
+            # Se a coluna alterada NÃO foi "% Comissão", não faz nada
+            if top_left.column() != col_pct_idx:
+                return
+            
+            from decimal import Decimal, ROUND_HALF_UP
+            
+            row = top_left.row()
+            
+            # 🔹 Pega os valores do modelo (já estão formatados em pt-BR)
+            pct_str = str(model.data(model.index(row, col_pct_idx)) or "0")
+            rec_str = str(model.data(model.index(row, col_rec_idx)) or "0")
+            
+            # 🔹 Converte para Decimal usando br_to_decimal
+            pct = br_to_decimal(pct_str, 4) or Decimal('0.0000')
+            rec_liq = br_to_decimal(rec_str, 2) or Decimal('0.00')
+            
+            # 🔹 Calcula: Valor Comissão = (Rec Liquido * % Comissão / 100)
+            # Usa ROUND_HALF_UP igual TopManager
+            valor_comissao = (rec_liq * pct / Decimal('100')).quantize(
+                Decimal('0.01'), 
+                rounding=ROUND_HALF_UP
+            )
+            
+            # 🔹 Formata para exibição (padrão brasileiro: 1.234,56)
+            valor_formatado = f"{float(valor_comissao):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            
+            # 🔹 Atualiza o modelo (visual) - IMPORTANTE: Bloqueia recursão
+            model.blockSignals(True)
+            model.setData(model.index(row, col_val_idx), valor_formatado, Qt.EditRole)
+            model.blockSignals(False)
+            
+            # 🔹 Atualiza também o DataFrame interno (para salvar depois)
+            if not self.df_extrato.empty and row < len(self.df_extrato):
+                self.df_extrato.iloc[row, self.df_extrato.columns.get_loc("Valor Comissão")] = float(valor_comissao)
+            
+            print(f"✅ Recalculado: Linha {row+1} | % = {pct} | Rec Liq = {rec_liq} | Valor = {valor_comissao}")
+                    
+        except Exception as e:
+            print(f"❌ Erro ao recalcular comissão: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _get_display_columns(self, cols_all):
         """Retorna as colunas a serem exibidas"""
@@ -586,14 +721,17 @@ class TabExtrato(QWidget):
             QMessageBox.warning(self, "Permissão", "Apenas a gestora (Karen) ou admin podem salvar alterações.")
             return
         
+        # 🔹 Força fechar qualquer editor ativo
         editor = self.tbl_extrato.focusWidget()
         if editor is not None:
             self.tbl_extrato.closeEditor(
                 editor, 
-                QAbstractItemDelegate.EndEditHint.SubmitModelCache # ⬅️ CORREÇÃO FINAL AQUI
+                QAbstractItemDelegate.EndEditHint.SubmitModelCache
             )
-
         self.tbl_extrato.clearFocus()
+        
+        # 🔹 IMPORTANTE: Aguarda processamento de eventos pendentes
+        QApplication.processEvents()
 
         model: EditableTableModel = self.tbl_extrato.model()
         if model is None:
@@ -604,6 +742,8 @@ class TabExtrato(QWidget):
         loading.show_overlay()
 
         try:
+            from decimal import Decimal, ROUND_HALF_UP
+            
             hdr = model.headers
             def idx(h):
                 try:
@@ -616,6 +756,12 @@ class TabExtrato(QWidget):
             i_val = idx("Valor Comissão")
             i_obs = idx("Observação")
             i_cons = idx("Consolidado")
+            i_rec = idx("Rec Liquido")  # 🔹 Necessário para recalcular
+
+            if i_db is None:
+                loading.close_overlay()
+                QMessageBox.warning(self, "Erro", "Coluna DBId não encontrada!")
+                return
 
             updated = 0
             with get_conn(self.cfg) as conn:
@@ -623,27 +769,44 @@ class TabExtrato(QWidget):
                 total = len(model.rows)
                 
                 for i, r in enumerate(model.rows, 1):
-                    if i_db is None:
-                        continue
-                    
                     loading.update_message(f"{Icons.SAVE} Salvando {i}/{total}")
                     
                     dbid = r[i_db]
+                    
+                    # Pula se consolidado
                     if i_cons is not None and str(r[i_cons]).strip() in ("1", "True", "true"):
                         continue
                     
-                    pct = br_to_decimal(r[i_pct], 4) if i_pct is not None else None
-                    val = br_to_decimal(r[i_val], 2) if i_val is not None else None
+                    # 🔹 Converte % Comissão
+                    pct = br_to_decimal(r[i_pct], 4) if i_pct is not None else Decimal('0.0000')
+                    
+                    # 🔹 RECALCULA Valor Comissão baseado no % e Rec Liquido
+                    # Garante que mesmo se o usuário não editou, o valor está correto
+                    val = Decimal('0.00')
+                    if pct is not None and i_rec is not None:
+                        rec_liq = br_to_decimal(r[i_rec], 2) or Decimal('0.00')
+                        
+                        # Calcula com ROUND_HALF_UP (igual TopManager)
+                        val = (rec_liq * pct / Decimal('100')).quantize(
+                            Decimal('0.01'), 
+                            rounding=ROUND_HALF_UP
+                        )
+                        
+                        print(f"📊 Salvando linha {i}: DBId={dbid} | % = {pct} | Rec Liq = {rec_liq} | Valor = {val}")
+                    
                     obs = str(r[i_obs])[:500] if i_obs is not None else None
                     
+                    # 🔹 Atualiza no banco
                     cur.execute("""
                         UPDATE dbo.Stik_Extrato_Comissoes
-                           SET PercComissao = COALESCE(?, PercComissao),
-                               ValorComissao = COALESCE(?, ValorComissao),
-                               Observacao = COALESCE(?, Observacao)
-                         WHERE Id = ?
-                    """, pct, val, obs, int(dbid))
+                        SET PercComissao = ?,
+                            ValorComissao = ?,
+                            Observacao = COALESCE(?, Observacao)
+                        WHERE Id = ?
+                    """, float(pct), float(val), obs, int(dbid))
+                    
                     updated += cur.rowcount
+                
                 conn.commit()
             
             loading.close_overlay()
@@ -653,10 +816,12 @@ class TabExtrato(QWidget):
         except Exception as e:
             loading.close_overlay()
             QMessageBox.critical(self, "Salvar", f"Erro ao salvar: {e}")
+            import traceback
+            traceback.print_exc()
     
     def on_validar(self):
         """Valida registros selecionados (gestora/admin) COM FEEDBACK"""
-        if self.role not in ("gestora", "admin"):
+        if self.role not in ("gestora", "admin", "controladoria"):
             QMessageBox.warning(self, "Permissão", "Apenas a gestora (Karen) ou admin podem validar.")
             return
         

@@ -361,7 +361,8 @@ class TabConsulta(QWidget):
         # Adiciona colunas faltantes de uma vez
         missing_cols = [c for c in expected if c not in df.columns]
         for c in missing_cols:
-            df[c] = ""
+            if c not in df.columns:
+                df[c] = ""
 
         # Normaliza colunas numéricas (vetorizado - mais rápido)
         num_cols = ["Recebido", "ICMSST", "Frete", "Rec Liquido", "Prazo Médio", 
@@ -410,15 +411,6 @@ class TabConsulta(QWidget):
         )
     
     def add_to_extrato(self, selected_rows=None) -> tuple:
-        """
-        Adiciona linhas selecionadas ao extrato COM FEEDBACK
-        
-        Args:
-            selected_rows: Lista de índices das linhas selecionadas (None/bool = usar seleção da tabela)
-        
-        Returns:
-            tuple: (inserted, errors)
-        """
         model: EditableTableModel = self.tbl.model()
         if model is None:
             return 0, 0
@@ -473,20 +465,17 @@ class TabConsulta(QWidget):
 
                     row = mt.iloc[0].to_dict()
 
-                    # 🔹 CORREÇÃO: Preserva % Comissão se já estiver definido
-                    pct_usuario = br_to_decimal(
-                        view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else None, 
-                        4
-                    )
-                    pct_padrao = br_to_decimal(
-                        row.get("Percentual_Comissao") or row.get("% Percentual Padrão") or 0.05, 
-                        4
-                    )
+                    pct = br_to_decimal(view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else row.get("% Comissão",0), 4) or Decimal('0.0000')
+                    pct_padrao = br_to_decimal(row.get("Percentual_Comissao") or row.get("% Percentual Padrão") or 0.01, 4)
                     
-                    # Se usuário não alterou, usa padrão. Se alterou, usa valor do usuário
-                    pct = pct_usuario if pct_usuario and pct_usuario != Decimal('0.05') else pct_padrao
-                    
-                    rec_liq = br_to_decimal(row.get("Rec Liquido", 0), 2) or Decimal('0.00')
+                    recebido = br_to_decimal(row.get("Recebido", 0), 2) or Decimal('0.00')
+                    icmsst = br_to_decimal(row.get("ICMSST", 0), 2) or Decimal('0.00')
+                    frete = br_to_decimal(row.get("Frete", 0), 2) or Decimal('0.00')
+
+                    # Calcula Rec Liquido COM valores já arredondados (igual TopManager)
+                    rec_liq = (recebido - icmsst - frete).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+                    # Calcula comissão sobre o valor líquido arredondado
                     valor_com = (rec_liq * pct / Decimal('100')).quantize(
                         Decimal('0.01'), 
                         rounding=ROUND_HALF_UP

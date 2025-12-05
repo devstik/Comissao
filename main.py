@@ -1,16 +1,20 @@
-
 """
 Sistema de Comissões STIK
 Ponto de entrada da aplicação
 """
 import sys
 from PySide6.QtWidgets import QApplication, QDialog
-from ui import LoginDialog, MainWindow, apply_theme
+from ui import LoginDialog, MainWindow
+from ui.themes import ThemeManager  # ← NOVO
 
 def main():
     """Função principal - Inicializa a aplicação"""
     app = QApplication(sys.argv)
-    apply_theme(app)
+    
+    # APLICAR TEMA MODERNO (novo sistema)
+    ThemeManager.set_theme(app, "dark")  # Pode ser "light" ou "dark"
+    
+    # Login
     dlg = LoginDialog()
     
     if dlg.exec() == QDialog.Accepted:

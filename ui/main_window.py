@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QTableView, QAbstractItemView, QApplication, QStackedWidget
 )
 from PySide6.QtCore import Qt
-
+from ui.themes import ThemeManager
 from tabs import TabConsulta, TabExtrato, TabConsolidados
 from ui.loading_overlay import QuickFeedback
 
@@ -277,5 +277,14 @@ class MainWindow(QMainWindow):
             self.tabs.setCurrentWidget(self.tab_consolidados)
         else:
             QMessageBox.warning(self, "Consolidação", message)
+
+    def _toggle_theme(self):
+        """Alterna entre tema claro e escuro"""
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        ThemeManager.toggle_theme(app)
+        
+        # Salvar preferência (opcional)
+        is_dark = ThemeManager.is_dark_mode()        
 
        

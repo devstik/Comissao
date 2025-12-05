@@ -1,8 +1,7 @@
-"""
-Estilos CSS do Sistema - Dark Purple Theme
-Versão completa com melhorias e componentes adicionais
-✅ CORRIGIDO: Setas usando SVG inline (sempre funciona!)
-"""
+from PySide6.QtWidgets import QApplication
+# =========================================
+#  TEMA DARK — SEU CSS COMPLETO AQUI
+# =========================================
 
 DARK_PURPLE_THEME = """
     /* ==================== ESTILOS BASE ==================== */
@@ -583,13 +582,263 @@ DARK_PURPLE_THEME = """
         background: rgba(109, 40, 217, 0.2);
     }
 """
+# =========================================
+#  TEMA LIGHT — MESMA ESTRUTURA DO DARK
+#  Paleta clara: branco, cinza claro, roxo suave
+# =========================================
+LIGHT_PURPLE_APPLE_THEME = """
+    /* ============================== LIGHT SOFT THEME (Apple Style) ============================== */
 
+QWidget {
+    background-color: #F4F6FA;
+    color: #1E1E1E;
+    font-size: 13px;
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+}
 
-def apply_theme(app):
+/* Cards */
+QFrame#card, QFrame[objectName="card"], QWidget.card {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    border: 1px solid #E4E6EB;
+    padding: 12px;
+    box-shadow: 0 6px 18px rgba(30,30,30,0.05);
+}
+
+/* Labels */
+QLabel { color: #1E1E1E; }
+QLabel[objectName="lblTitle"] { font-size: 18px; font-weight: 700; }
+
+/* ============================== INPUTS ============================== */
+QLineEdit, QDateEdit, QSpinBox {
+    background: #FFFFFF;
+    color: #1E1E1E;
+    border: 1px solid #D6D8E0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-height: 34px;
+}
+
+QLineEdit:focus, QDateEdit:focus, QSpinBox:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.18);
+}
+
+/* ============================== COMBOBOX (Apple Style) ============================== */
+
+QComboBox {
+    background: #ffffff;
+    border: 1px solid #D6D8E0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    min-height: 34px;
+    color: #1E1E1E;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/chevron-down.png);
+    width: 12px;
+    height: 12px;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 26px;
+    background: transparent;
+}
+
+/* Popup */
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    border: 1px solid #D6D8E0;
+    border-radius: 10px;
+    padding: 6px;
+    outline: none;
+}
+
+/* Items dentro do dropdown */
+QComboBox QAbstractItemView::item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #1E1E1E;
+}
+
+/* Hover estilo Apple */
+QComboBox QAbstractItemView::item:hover {
+    background: #F2F3F7;
+}
+
+/* Selecionado estilo suave */
+QComboBox QAbstractItemView::item:selected {
+    background: #EAE5FF;
+    color: #1E1E1E;
+}
+
+/* ============================== TABS ============================== */
+QTabBar::tab {
+    background: #eef0f6;
+    color: #555A6E;
+    padding: 8px 14px;
+    margin-right: 4px;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid transparent;
+    min-height: 36px;
+    font-weight: 600;
+}
+
+QTabBar::tab:selected {
+    background: #ffffff;
+    border-bottom: 2px solid #8B5CF6;
+    color: #8B5CF6;
+}
+
+/* ============================== BOTÕES ============================== */
+QPushButton {
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-height: 32px;
+    border: 1px solid transparent;
+    background: #F0F2FA;
+    color: #1E1E1E;
+    font-weight: 600;
+    transition: 0.15s ease;
+    box-shadow: 0 4px 12px rgba(30,30,30,0.06);
+}
+
+QPushButton:hover { background: #E9EBF5; }
+QPushButton:pressed { background: #E0E3F0; }
+
+/* Botão primário */
+QPushButton#btnPrimary {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #8B5CF6, stop:1 #A78BFA);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 8px 20px rgba(139,92,246,0.18);
+}
+
+/* Ghost */
+QPushButton#btnGhost {
+    background: transparent;
+    border: 1px solid #E6E8EE;
+    color: #555A6E;
+}
+
+/* ============================== TABLES ============================== */
+QTableView {
+    background-color: #FFFFFF;
+    alternate-background-color: #F8F9FB;
+    border: 1px solid #E6E8EE;
+    border-radius: 6px;
+    selection-background-color: #EAE5FF;
+    selection-color: #1E1E1E;
+}
+
+QHeaderView::section {
+    background-color: #F3F4F8;
+    color: #4B5563;
+    padding: 8px;
+    font-weight: 700;
+    border-right: 1px solid #E6E8EE;
+}
+
+/* ============================== SCROLL ============================== */
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+}
+
+QScrollBar::handle:vertical {
+    background: #D1D5DB;
+    border-radius: 5px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #BFC6D1;
+}
+
+/* ==================== HORIZONTAL SCROLLBAR ==================== */
+QScrollBar:horizontal {
+    background: transparent;
+    height: 15px;                /* altura discreta */
+    margin: 0 12px 0 12px;       /* espaço entre bordas e cantos */
+    border-radius: 6px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #D1D5DB;         /* cor do "polegar" */
+    min-width: 30px;
+    height: 15px;
+    border-radius: 6px;
+    margin: 2px 0;               /* deixar um pequeno espaçamento */
+}
+
+/* Hover do handle */
+QScrollBar::handle:horizontal:hover {
+    background: #BFC6D1;
+}
+
+/* Pressed / arrastando */
+QScrollBar::handle:horizontal:pressed {
+    background: #AEB6C3;
+}
+
+/* Remover setas e linhas desnecessárias */
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+    width: 0;
+    height: 0;
+}
+
+/* Ajuste fino para QTableView / QAbstractScrollArea (garante que a barra horizontal fique mais alinhada) */
+QTableView QScrollBar:horizontal,
+QAbstractScrollArea QScrollBar:horizontal {
+    margin: 0 8px 8px 8px;
+}
+
+/* Se quiser que a barra apareça com leve sombra quando existir overflow */
+QScrollBar:horizontal:enabled {
+    /* pequena sombra apenas para evidenciar a presença do controle */
+    box-shadow: 0 4px 10px rgba(30,30,30,0.03);
+}
+
+/* ============================== DIALOGS ============================== */
+QDialog {
+    background-color: #F4F6FA;
+    border-radius: 12px;
+}
+
+QLabel#loginTitle {
+    color: #111827;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+"""
+
+# =========================
+# THEME MANAGER
+# =========================
+class ThemeManager:
     """
-    Aplica o tema dark purple na aplicação
-    
-    Args:
-        app: Instância do QApplication
+    ThemeManager simples — aplica DARK_PURPLE_THEME ou LIGHT_SOFT_THEME.
+    Uso:
+        ThemeManager.set_theme(app, "dark")
+        ThemeManager.set_theme(app, "light")
+        ThemeManager.toggle(app)
     """
-    app.setStyleSheet(DARK_PURPLE_THEME)
+    current_theme = "dark"
+
+    @classmethod
+    def set_theme(cls, app: QApplication, theme_name: str):
+        cls.current_theme = theme_name.lower()
+        if cls.current_theme == "light":
+            app.setStyleSheet(LIGHT_PURPLE_APPLE_THEME)
+        else:
+            app.setStyleSheet(DARK_PURPLE_THEME)
+
+    @classmethod
+    def toggle(cls, app: QApplication):
+        new_theme = "light" if cls.current_theme == "dark" else "dark"
+        cls.set_theme(app, new_theme)
