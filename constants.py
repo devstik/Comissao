@@ -2,6 +2,10 @@
 Constantes do sistema - Usuários, E-mails e Mapeamentos
 """
 
+# ======================= Versão do Sistema =======================
+APP_VERSION = "1.0.2"
+GITHUB_REPO = "devstik/Comissao"  # Formato: owner/repo
+
 # ======================= Usuários e perfis =======================
 USERS = {
     "admin":   {"pwd": "123456", "role": "admin"},
