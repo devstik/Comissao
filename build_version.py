@@ -79,13 +79,10 @@ def build_executable():
     print("\n🔨 Gerando executável...")
     print("-" * 50)
     
+    # Usa o arquivo .spec customizado que inclui todos os módulos
     result = subprocess.run([
         'pyinstaller',
-        '--onefile',
-        '--windowed',
-        '--name', 'Comissys',
-        '--icon=icons/app.ico',
-        'main.py'
+        'Comissys.spec'
     ], capture_output=False)
     
     if result.returncode == 0:

@@ -3,7 +3,7 @@ Constantes do sistema - Usuários, E-mails e Mapeamentos
 """
 
 # ======================= Versão do Sistema =======================
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.8"
 GITHUB_REPO = "devstik/Comissao"  # Formato: owner/repo
 
 # ======================= Usuários e perfis =======================
