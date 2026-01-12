@@ -10,13 +10,13 @@ USERS = {
 }
 
 # ======================= E-mails do Sistema =======================
-EMAIL_GESTORA = "karen.gomes@stik.com.br"
-EMAIL_CONTROLADORIA = "administrativo@stik.com.br"
+EMAIL_GESTORA = "thiago.pereira@stik.com.br"
+EMAIL_CONTROLADORIA = "thiago.pereira@stik.com.br"
 EMAIL_COPIA_COMISSOES = f"{EMAIL_GESTORA}, {EMAIL_CONTROLADORIA}"
 
 # ======================= Vendedores e E-mails =======================
 VENDEDOR_EMAIL = {
-    "André Ricardo": "ar.pedidos@hotmail.com",
+    "André Ricardo": "thiago.pereira@stik.com.br",
     "Bruno Viana": "bruno.stik@outlook.com",
     "Carlos Pereira": "carlosppeixoto901@gmail.com",
     "Vicente Zepka": "vicentezf@yahoo.com.br",

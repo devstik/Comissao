@@ -125,16 +125,9 @@ class EditableTableModel(QAbstractTableModel):
         return True
 
     def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder):
-        """Implementa ordenação inteligente da tabela sem cortar colunas"""
+        """Implementa ordenação inteligente da tabela"""
         if column < 0 or column >= len(self.headers):
             return
-
-        # Salva larguras atuais das colunas
-        table = self.parent()
-        saved_widths = {}
-        if table is not None:
-            for col in range(len(self.headers)):
-                saved_widths[col] = table.columnWidth(col)
 
         self.layoutAboutToBeChanged.emit()
 
@@ -179,11 +172,6 @@ class EditableTableModel(QAbstractTableModel):
 
         self.layoutChanged.emit()
         self.headerDataChanged.emit(Qt.Orientation.Horizontal, 0, len(self.headers) - 1)
-
-        # Restaura larguras após a ordenação
-        if table is not None and saved_widths:
-            for col, width in saved_widths.items():
-                table.setColumnWidth(col, width)
 
 class DecimalDelegate(QStyledItemDelegate):
     """

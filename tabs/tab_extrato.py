@@ -317,12 +317,6 @@ class TabExtrato(QWidget):
         loading = LoadingOverlay(parent_window, f"{Icons.LOADING} Carregando extrato")
         loading.show_overlay()
         
-        # 🔹 Salvar larguras das colunas antes de atualizar
-        saved_widths = {}
-        if self.tbl_extrato.model() is not None:
-            for col in range(self.tbl_extrato.model().columnCount()):
-                saved_widths[col] = self.tbl_extrato.columnWidth(col)
-        
         try:
             # 🔹 Consulta ao banco
             with get_conn(self.cfg) as conn:
@@ -383,12 +377,6 @@ class TabExtrato(QWidget):
 
         # 🔹 Exibe na tabela
         self._display_extrato(df)
-        
-        # 🔹 Restaurar larguras das colunas
-        if saved_widths:
-            for col, width in saved_widths.items():
-                if col < self.tbl_extrato.model().columnCount():
-                    self.tbl_extrato.setColumnWidth(col, width)
 
         # 🔹 Atualiza contador
         total = len(df)
@@ -547,11 +535,9 @@ class TabExtrato(QWidget):
         df_show = apply_display_formats(df.copy())
         cols_show = self._get_display_columns(df_show.columns)
         
-        # 🔹 Salvar larguras antes de trocar o model
-        saved_widths = {}
+        # 🔹 Limpar delegates antes de trocar o model
         if self.tbl_extrato.model() is not None:
             for col in range(self.tbl_extrato.model().columnCount()):
-                saved_widths[col] = self.tbl_extrato.columnWidth(col)
                 self.tbl_extrato.setItemDelegateForColumn(col, None)
         
         # 🔹 Criar model
@@ -588,16 +574,49 @@ class TabExtrato(QWidget):
                 delegate_valor = DecimalDelegate(decimal_places=2, parent=self.tbl_extrato)
                 self.tbl_extrato.setItemDelegateForColumn(col_idx, delegate_valor)
                     
-        # 🔹 Restaurar larguras ou ajustar inicial
-        if saved_widths:
-            for col, width in saved_widths.items():
-                if col < model.columnCount():
-                    self.tbl_extrato.setColumnWidth(col, width)
-        else:
-            self.tbl_extrato.resizeColumnsToContents()
+        # 🔹 Configurar redimensionamento das colunas
+        header = self.tbl_extrato.horizontalHeader()
         
-        self.tbl_extrato.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.tbl_extrato.horizontalHeader().setStretchLastSection(False)
+        # Primeiro ajustar todas ao conteúdo
+        self.tbl_extrato.resizeColumnsToContents()
+        
+        # Larguras mínimas sugeridas para cada tipo de coluna
+        min_widths = {
+            "ID": 60,
+            "Vendedor": 120,
+            "Titulo": 180,
+            "Cliente": 150,
+            "Artigo": 150,
+            "Linha": 100,
+            "UF": 40,
+            "Recebido": 110,
+            "Rec Liquido": 110,
+            "Preço Venda": 110,
+            "Valor Comissão": 120,
+            "% Comissão": 80,
+            "ICMSST": 90,
+            "Frete": 90,
+            "Emissão": 95,
+            "Vencimento": 95,
+            "Recebimento": 95,
+            "Competência": 90,
+            "ValidadoEm": 95
+        }
+        
+        # Configurar modo Interactive para permitir ajuste manual
+        # e aplicar larguras mínimas
+        for col in range(model.columnCount()):
+            col_name = cols_show[col] if col < len(cols_show) else ""
+            header.setSectionResizeMode(col, QHeaderView.Interactive)
+            
+            # Aplicar largura mínima se definida
+            if col_name in min_widths:
+                current_width = self.tbl_extrato.columnWidth(col)
+                if current_width < min_widths[col_name]:
+                    self.tbl_extrato.setColumnWidth(col, min_widths[col_name])
+        
+        # Última coluna se expande para preencher espaço disponível
+        header.setStretchLastSection(True)
         # 🔹 Reconectar signal de seleção (atualiza total)
         try:
             self.tbl_extrato.selectionModel().selectionChanged.disconnect()

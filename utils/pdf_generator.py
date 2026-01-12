@@ -36,14 +36,15 @@ def gerar_pdf_extrato(path: str, df_src: pd.DataFrame):
     
     # Especificações das colunas (nome, largura em mm)
     col_specs = [
-        ("Doc",          22),
-        ("Título",       78),
-        ("Artigo",       48),
-        ("Valor Receb.", 32),
-        ("Rec. Líquido", 32),
-        ("Preço Venda",  28),
-        ("%Com",         18),
-        ("Valor Com.",   32),
+        ("Doc",          20),
+        ("Cliente",      55),
+        ("Título",       48),
+        ("Artigo",       33),
+        ("Valor Receb.", 28),
+        ("Rec. Líquido", 28),
+        ("Preço Venda",  24),
+        ("%Com",         16),
+        ("Valor Com.",   28),
     ]
     
     # Calcula posições X das colunas
@@ -150,8 +151,9 @@ def _draw_row(c, row, col_specs: list, x_pos: list, x_end: float, line: float) -
         tuple: (nova_linha, rec_liquido, valor_comissao)
     """
     doc   = str(row.get("ID", ""))
-    tit   = str(row.get("Titulo", ""))[:60]
-    art   = str(row.get("Artigo", ""))[:35]
+    cli   = str(row.get("Cliente", ""))[:35]
+    tit   = str(row.get("Titulo", ""))[:35]
+    art   = str(row.get("Artigo", ""))[:28]
     vr    = row.get("Valor Recebido", 0.0)
     rl    = row.get("Rec Liquido", 0.0)
     pv    = row.get("Preço Venda", 0.0)
@@ -160,14 +162,15 @@ def _draw_row(c, row, col_specs: list, x_pos: list, x_end: float, line: float) -
     
     # Texto
     c.drawString(x_pos[0], line, doc)
-    c.drawString(x_pos[1], line, tit)
-    c.drawString(x_pos[2], line, art)
+    c.drawString(x_pos[1], line, cli)
+    c.drawString(x_pos[2], line, tit)
+    c.drawString(x_pos[3], line, art)
     
     # Números alinhados à direita
-    c.drawRightString(x_pos[3] + (col_specs[3][1]*mm - 2*mm), line, fmt_num(vr, 2))
-    c.drawRightString(x_pos[4] + (col_specs[4][1]*mm - 2*mm), line, fmt_num(rl, 2))
-    c.drawRightString(x_pos[5] + (col_specs[5][1]*mm - 2*mm), line, fmt_num(pv, 4))
-    c.drawRightString(x_pos[6] + (col_specs[6][1]*mm - 4*mm), line, f"{pct:.2f}%")
+    c.drawRightString(x_pos[4] + (col_specs[4][1]*mm - 2*mm), line, fmt_num(vr, 2))
+    c.drawRightString(x_pos[5] + (col_specs[5][1]*mm - 2*mm), line, fmt_num(rl, 2))
+    c.drawRightString(x_pos[6] + (col_specs[6][1]*mm - 2*mm), line, fmt_num(pv, 4))
+    c.drawRightString(x_pos[7] + (col_specs[7][1]*mm - 4*mm), line, f"{pct:.2f}%")
     c.drawRightString(x_end, line, fmt_num(vcom, 2))
     
     line -= 6*mm
@@ -179,6 +182,6 @@ def _draw_totals(c, total_rec: float, total_com: float, col_specs: list,
                  x_pos: list, x_end: float, line: float):
     """Desenha a linha de totais"""
     c.setFont("Helvetica-Bold", 11)
-    c.drawRightString(x_pos[4] + (col_specs[4][1]*mm - 2*mm), line, fmt_num(total_rec, 2))
+    c.drawRightString(x_pos[5] + (col_specs[5][1]*mm - 2*mm), line, fmt_num(total_rec, 2))
     c.drawRightString(x_end, line, fmt_num(total_com, 2))
     c.setFont("Helvetica", 10)
