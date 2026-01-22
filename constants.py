@@ -2,10 +2,6 @@
 Constantes do sistema - Usuários, E-mails e Mapeamentos
 """
 
-# ======================= Versão do Sistema =======================
-APP_VERSION = "1.0.8"
-GITHUB_REPO = "devstik/Comissao"  # Formato: owner/repo
-
 # ======================= Usuários e perfis =======================
 USERS = {
     "admin":   {"pwd": "123456", "role": "admin"},
@@ -14,13 +10,13 @@ USERS = {
 }
 
 # ======================= E-mails do Sistema =======================
-EMAIL_GESTORA = "thiago.pereira@stik.com.br"
-EMAIL_CONTROLADORIA = "thiago.pereira@stik.com.br"
+EMAIL_GESTORA = "karen.gomes@stik.com.br"
+EMAIL_CONTROLADORIA = "administrativo@stik.com.br"
 EMAIL_COPIA_COMISSOES = f"{EMAIL_GESTORA}, {EMAIL_CONTROLADORIA}"
 
 # ======================= Vendedores e E-mails =======================
 VENDEDOR_EMAIL = {
-    "André Ricardo": "thiago.pereira@stik.com.br",
+    "André Ricardo": "ar.pedidos@hotmail.com",
     "Bruno Viana": "bruno.stik@outlook.com",
     "Carlos Pereira": "carlosppeixoto901@gmail.com",
     "Vicente Zepka": "vicentezf@yahoo.com.br",
