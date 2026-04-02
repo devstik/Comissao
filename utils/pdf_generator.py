@@ -7,7 +7,8 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
-from .formatters import fmt_num, to_float, norm_pct
+from decimal import Decimal, ROUND_HALF_UP
+from .formatters import fmt_num, to_float, norm_pct, br_to_decimal
 
 
 def gerar_pdf_extrato(path: str, df_src: pd.DataFrame):
@@ -37,9 +38,9 @@ def gerar_pdf_extrato(path: str, df_src: pd.DataFrame):
     # Especificações das colunas (nome, largura em mm)
     col_specs = [
         ("Doc",          20),
-        ("Cliente",      55),
+        ("Cliente",      65),
         ("Título",       48),
-        ("Artigo",       33),
+        ("Artigo",       28),
         ("Valor Receb.", 28),
         ("Rec. Líquido", 28),
         ("Preço Venda",  24),
@@ -56,19 +57,26 @@ def gerar_pdf_extrato(path: str, df_src: pd.DataFrame):
     # Gera o PDF por vendedor
     for vend, dfv in df.groupby("Vendedor"):
         line = _page_header(c, vend, logo_path, col_specs, x_pos, x_end, W, H, top)
-        total_rec = 0.0
-        total_com = 0.0
-        
+
         # Linhas de dados
         for _, r in dfv.iterrows():
             if line < 20 * mm:
                 c.showPage()
                 line = _page_header(c, vend, logo_path, col_specs, x_pos, x_end, W, H, top)
-            
-            line, rec, com = _draw_row(c, r, col_specs, x_pos, x_end, line)
-            total_rec += rec
-            total_com += com
-        
+
+            line, _, _ = _draw_row(c, r, col_specs, x_pos, x_end, line)
+
+        # Cálculo de totais no modo ERP-like: soma raw com Decimal e arredonda o total
+        # Usa os valores do DataFrame original (antes da conversão para float)
+        total_rec_dec = Decimal('0.00')
+        total_com_dec = Decimal('0.00')
+        for _, rawr in df_src[df_src.get("Vendedor") == vend].iterrows():
+            total_rec_dec += br_to_decimal(rawr.get("Rec Liquido", 0), None) or Decimal('0.00')
+            total_com_dec += br_to_decimal(rawr.get("Valor Comissão", 0), None) or Decimal('0.00')
+
+        total_rec = float(total_rec_dec.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        total_com = float(total_com_dec.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
         # Linha de totais
         _draw_totals(c, total_rec, total_com, col_specs, x_pos, x_end, line)
         c.showPage()
@@ -90,6 +98,11 @@ def _preparar_dados(df_src: pd.DataFrame) -> pd.DataFrame:
     df["% Comissão"]      = df.get("% Comissão", 0).apply(norm_pct)
     df["Valor Comissão"]  = df.get("Valor Comissão", 0).apply(to_float)
     
+    df = df.sort_values (
+        by = ["Vendedor", "Cliente"],
+        key = lambda col: col.str.upper() if col.dtype == "object" else col
+    )
+
     return df
 
 

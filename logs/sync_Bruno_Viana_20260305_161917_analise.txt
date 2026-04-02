@@ -1,0 +1,19 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-03-05 16:19:17
+Período: 01/02/2026 a 28/02/2026
+Vendedor: Bruno Viana
+
+RESUMO:
+  Total TopManager: 147
+  Total Comissys: 147
+  Em sincronia: 147
+  Faltando: 0
+  Sobrando: 0
+  Alterados: 0
+
+TOTAIS (Recebido / Rec.Liq):
+  TopManager: R$ 272.960,08 / R$ 265.555,13
+  Comissys:   R$ 272.960,11 / R$ 265.555,10
+  Diferença:  R$ -0,03 / R$ 0,03

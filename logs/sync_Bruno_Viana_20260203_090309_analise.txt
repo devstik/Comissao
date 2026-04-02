@@ -1,0 +1,19 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-02-03 09:03:09
+Período: 01/01/2026 a 31/01/2026
+Vendedor: Bruno Viana
+
+RESUMO:
+  Total TopManager: 121
+  Total Comissys: 122
+  Em sincronia: 121
+  Faltando: 0
+  Sobrando: 1
+  Alterados: 0
+
+================================================================================
+TÍTULOS SOBRANDO (a remover):
+================================================================================
+DBId=40730 | ID=272485 | Titulo=Stik.76670/1 | Artigo=X Nillo 25 mm | Vendedor=Bruno Viana | Data=2026-01-15

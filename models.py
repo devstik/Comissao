@@ -1,9 +1,10 @@
 # models.py
 from __future__ import annotations
 from typing import List, Any, Set
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
-from PySide6.QtWidgets import QStyledItemDelegate, QLineEdit
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QEvent, QItemSelection, QItemSelectionModel
+from PySide6.QtWidgets import QStyledItemDelegate, QLineEdit, QTableView
+from PySide6.QtGui import QFont, QColor, QKeyEvent
+from decimal import Decimal, InvalidOperation
 
 _NUMERIC_HINTS = {
     "Recebido","ICMSST","Frete","Rec Liquido",
@@ -135,27 +136,37 @@ class EditableTableModel(QAbstractTableModel):
         self._sort_order = order
 
         def convert_value(val):
+            """Retorna uma chave ordenável com prioridade explícita:
+            0 -> número (Decimal)
+            1 -> data (yyyyMMdd string)
+            2 -> competência (yyyymm)
+            3 -> string (lowercase)
+            4 -> empty
+            """
             if val is None or val == "":
-                return ("empty", "")
+                return (4, "")
 
             val_str = str(val).strip()
 
+            # Tenta número (normaliza BR -> US)
             try:
                 num_str = val_str.replace(".", "").replace(",", ".")
                 num_str = num_str.replace("%", "").strip()
-                num_val = float(num_str)
-                return ("num", num_val)
-            except:
+                num_dec = Decimal(num_str)
+                return (0, num_dec)
+            except (InvalidOperation, ValueError):
                 pass
 
+            # Data no formato dd/mm/yyyy
             if "/" in val_str and len(val_str) == 10:
                 try:
                     d, m, y = val_str.split("/")
-                    return ("date", f"{y}{m}{d}")
-                except:
+                    return (1, f"{y}{m}{d}")
+                except Exception:
                     pass
 
-            if "-" in val_str and len(val_str) <= 9:
+            # Competência tipo 'Jan-2024' ou similar
+            if "-" in val_str and len(val_str) <= 12:
                 month_map = {
                     "jan": "01", "fev": "02", "mar": "03", "abr": "04",
                     "mai": "05", "jun": "06", "jul": "07", "ago": "08",
@@ -163,15 +174,111 @@ class EditableTableModel(QAbstractTableModel):
                 }
                 parts = val_str.lower().split("-")
                 if len(parts) == 2 and parts[0] in month_map:
-                    return ("comp", f"{parts[1]}{month_map[parts[0]]}")
+                    return (2, f"{parts[1]}{month_map[parts[0]]}")
 
-            return ("str", val_str.lower())
+            # Fallback: string
+            return (3, val_str.lower())
 
         reverse = (order == Qt.SortOrder.DescendingOrder)
         self.rows.sort(key=lambda row: convert_value(row[column]), reverse=reverse)
 
         self.layoutChanged.emit()
         self.headerDataChanged.emit(Qt.Orientation.Horizontal, 0, len(self.headers) - 1)
+
+
+class ExcelLikeTableView(QTableView):
+    """
+    Adiciona um atalho estilo planilha para expandir a seleção
+    da célula atual até a última linha visível do model.
+    """
+
+    def _select_from_current_cell(self, target_row: int, target_column: int) -> bool:
+        index = self.currentIndex()
+        model = self.model()
+
+        if not index.isValid() or model is None or model.rowCount() == 0:
+            return False
+
+        selection_model = self.selectionModel()
+
+        if selection_model is None:
+            return False
+
+        target_row = max(0, min(target_row, model.rowCount() - 1))
+        target_column = max(0, min(target_column, model.columnCount() - 1))
+
+        top_left = model.index(index.row(), index.column())
+        bottom_right = model.index(target_row, target_column)
+        selection = QItemSelection(top_left, bottom_right)
+
+        selection_model.select(
+            selection,
+            QItemSelectionModel.SelectionFlag.ClearAndSelect
+            | QItemSelectionModel.SelectionFlag.Current
+        )
+        self.setCurrentIndex(top_left)
+        self.scrollTo(bottom_right)
+        return True
+
+    def select_from_current_cell_to_bottom(self) -> bool:
+        index = self.currentIndex()
+        model = self.model()
+        if not index.isValid() or model is None:
+            return False
+        return self._select_from_current_cell(model.rowCount() - 1, index.column())
+
+    def select_from_current_cell_to_top(self) -> bool:
+        index = self.currentIndex()
+        if not index.isValid():
+            return False
+        return self._select_from_current_cell(0, index.column())
+
+    def select_from_current_cell_to_right(self) -> bool:
+        index = self.currentIndex()
+        model = self.model()
+        if not index.isValid() or model is None:
+            return False
+        return self._select_from_current_cell(index.row(), model.columnCount() - 1)
+
+    def select_from_current_cell_to_left(self) -> bool:
+        index = self.currentIndex()
+        if not index.isValid():
+            return False
+        return self._select_from_current_cell(index.row(), 0)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if _handle_excel_selection_shortcut(self, event):
+            event.accept()
+            return
+
+        super().keyPressEvent(event)
+
+
+class ShortcutSelectAllLineEdit(QLineEdit):
+    """
+    Encaminha Ctrl+Shift+Seta para baixo para a tabela,
+    expandindo a seleção a partir da célula atual.
+    """
+
+    def __init__(self, table_view: QTableView | None = None, parent=None):
+        super().__init__(parent)
+        self.table_view = table_view
+
+    def _handle_select_all_shortcut(self, event) -> bool:
+        if self.table_view is None:
+            return False
+        return _handle_excel_selection_shortcut(self.table_view, event)
+
+    def event(self, event):
+        if event.type() == QEvent.Type.ShortcutOverride and self._handle_select_all_shortcut(event):
+            return True
+        return super().event(event)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if self._handle_select_all_shortcut(event):
+            return
+
+        super().keyPressEvent(event)
 
 class DecimalDelegate(QStyledItemDelegate):
     """
@@ -184,7 +291,7 @@ class DecimalDelegate(QStyledItemDelegate):
         self.decimal_places = decimal_places
     
     def createEditor(self, parent, option, index):
-        editor = QLineEdit(parent)
+        editor = ShortcutSelectAllLineEdit(table_view=self.parent(), parent=parent)
         editor.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         return editor
     
@@ -217,3 +324,30 @@ class DecimalDelegate(QStyledItemDelegate):
             model.setData(index, formatted, Qt.EditRole)
         except ValueError:
             model.setData(index, text, Qt.EditRole)
+
+
+def _handle_excel_selection_shortcut(table_view: QTableView, event) -> bool:
+    modifiers = event.modifiers()
+    ctrl_shift = (
+        modifiers & Qt.KeyboardModifier.ControlModifier
+        and modifiers & Qt.KeyboardModifier.ShiftModifier
+    )
+
+    if not ctrl_shift:
+        return False
+
+    handlers = {
+        Qt.Key.Key_Down: "select_from_current_cell_to_bottom",
+        Qt.Key.Key_Up: "select_from_current_cell_to_top",
+        Qt.Key.Key_Right: "select_from_current_cell_to_right",
+        Qt.Key.Key_Left: "select_from_current_cell_to_left",
+    }
+
+    method_name = handlers.get(event.key())
+    if not method_name or not hasattr(table_view, method_name):
+        return False
+
+    handled = getattr(table_view, method_name)()
+    if handled:
+        event.accept()
+    return handled

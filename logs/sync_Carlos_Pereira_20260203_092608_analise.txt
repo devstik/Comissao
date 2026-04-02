@@ -1,0 +1,45 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-02-03 09:26:08
+Período: 01/01/2026 a 31/01/2026
+Vendedor: Carlos Pereira
+
+RESUMO:
+  Total TopManager: 1019
+  Total Comissys: 1046
+  Em sincronia: 1019
+  Faltando: 0
+  Sobrando: 27
+  Alterados: 0
+
+================================================================================
+TÍTULOS SOBRANDO (a remover):
+================================================================================
+DBId=41194 | ID=267342 | Titulo=Stik.163728/4 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41423 | ID=267441 | Titulo=Stik.163807/4 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41422 | ID=267466 | Titulo=Stik.163825/4 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41170 | ID=268509 | Titulo=Stik.164502/3 | Artigo=Nadia 14 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41539 | ID=268511 | Titulo=Stik.164504/3 | Artigo=Nillo 25 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41165 | ID=268552 | Titulo=Stik.164525/3 | Artigo=Lady 11 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41166 | ID=268552 | Titulo=Stik.164525/3 | Artigo=Lady 14 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41758 | ID=270203 | Titulo=Stik.165656/2 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=42000 | ID=270203 | Titulo=Stik.165656/2 | Artigo=Sol 17 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41870 | ID=270216 | Titulo=Stik.165667/2 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41992 | ID=270246 | Titulo=Stik.165697/2 | Artigo=Nadia 10 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41354 | ID=271192 | Titulo=Stik.166342/1 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41254 | ID=271231 | Titulo=Stik.166367/1 | Artigo=Nadia 10 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41253 | ID=271232 | Titulo=Stik.166368/1 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41349 | ID=271232 | Titulo=Stik.166368/1 | Artigo=Nadia 10 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41348 | ID=271252 | Titulo=Stik.166382/1 | Artigo=Nillo 16 mm DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41251 | ID=271326 | Titulo=Stik.166434/1 | Artigo=Nadia 10 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41122 | ID=271326 | Titulo=Stik.166434/1 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41340 | ID=271366 | Titulo=Stik.166459/1 | Artigo=Nadia 17 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41107 | ID=271751 | Titulo=Stik.166732/1 | Artigo=Nadia 17 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41229 | ID=271751 | Titulo=Stik.166732/1 | Artigo=Nillo 16 DR | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41445 | ID=271751 | Titulo=Stik.166732/1 | Artigo=Lady 14 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41228 | ID=271774 | Titulo=Stik.166748/1 | Artigo=Nadia 10 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41329 | ID=271775 | Titulo=Stik.166749/1 | Artigo=Lady 14 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41227 | ID=271776 | Titulo=Stik.166750/1 | Artigo=Lady 14 mm | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41226 | ID=271806 | Titulo=Stik.166770/1 | Artigo=Nadia 17 mm ENF | Vendedor=Carlos Pereira | Data=2026-01-27
+DBId=41225 | ID=271816 | Titulo=Stik.166776/1 | Artigo=Nillo 16 mm DR | Vendedor=Carlos Pereira | Data=2026-01-27

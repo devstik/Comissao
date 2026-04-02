@@ -1,0 +1,23 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - CONCLUIDO
+================================================================================
+Timestamp: 2026-03-05 15:30:28
+Período: 01/02/2026 a 28/02/2026
+Vendedor: Bruno Viana
+
+RESUMO:
+  Total TopManager: 147
+  Total Comissys: 152
+  Em sincronia: 145
+  Faltando: 0
+  Sobrando: 5
+  Alterados: 0
+
+================================================================================
+TÍTULOS SOBRANDO (a remover):
+================================================================================
+DBId=47974 | ID=271744 | Titulo=Stik.76482/2 | Artigo=X Nillo 25 mm | Vendedor=Bruno Viana | Data=2026-02-19
+DBId=48035 | ID=272379 | Titulo=Stik.76644/2 | Artigo=X Nillo 25 mm | Vendedor=Bruno Viana | Data=2026-02-19
+DBId=48006 | ID=274099 | Titulo=Stik.168305/1 | Artigo=X Nillo 25 mm | Vendedor=Bruno Viana | Data=2026-02-19
+DBId=48007 | ID=274099 | Titulo=Stik.168305/1 | Artigo=X Nillo 16 mm | Vendedor=Bruno Viana | Data=2026-02-19
+DBId=47990 | ID=274424 | Titulo=Stik.168527/1 | Artigo=X Nillo 25 mm | Vendedor=Bruno Viana | Data=2026-02-18

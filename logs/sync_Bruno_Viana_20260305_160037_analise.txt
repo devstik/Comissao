@@ -1,0 +1,14 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-03-05 16:00:37
+Período: 01/02/2026 a 28/02/2026
+Vendedor: Bruno Viana
+
+RESUMO:
+  Total TopManager: 147
+  Total Comissys: 147
+  Em sincronia: 145
+  Faltando: 0
+  Sobrando: 0
+  Alterados: 0

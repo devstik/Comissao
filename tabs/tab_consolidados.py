@@ -4,7 +4,7 @@ RESPONSIVA | OTIMIZADA | COM FEEDBACKS | LAYOUT PADRONIZADO
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QComboBox,
-    QPushButton, QTableView, QMessageBox, QFileDialog,
+    QPushButton, QMessageBox, QFileDialog,
     QHeaderView, QAbstractItemView, QInputDialog, QLineEdit, QSizePolicy
 )
 from PySide6.QtCore import Qt
@@ -12,7 +12,7 @@ import pandas as pd
 import os
 
 from config import DBConfig, get_conn
-from models import EditableTableModel
+from models import EditableTableModel, ExcelLikeTableView
 from utils.formatters import apply_display_formats, comp_br, br_to_decimal, br_to_float
 from utils.pdf_generator import gerar_pdf_extrato
 from constants import USERS, SMTP_CONFIG
@@ -44,8 +44,8 @@ class TabConsolidados(QWidget):
     def _setup_ui(self):
         """Configura a interface da aba"""
         lay = QVBoxLayout(self)
-        lay.setSpacing(10)
-        lay.setContentsMargins(12, 12, 12, 12)
+        lay.setSpacing(8)
+        lay.setContentsMargins(10, 10, 10, 10)
         
         # Filtros e botões (LAYOUT PADRONIZADO)
         self._create_filters_and_buttons(lay)
@@ -64,14 +64,14 @@ class TabConsolidados(QWidget):
         filtros_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         
         filtros_layout = QGridLayout(filtros_container)
-        filtros_layout.setSpacing(10)
-        filtros_layout.setContentsMargins(16, 12, 16, 12)
+        filtros_layout.setSpacing(8)
+        filtros_layout.setContentsMargins(12, 10, 12, 10)
         
         # Competência
         filtros_layout.addWidget(QLabel(f"{Icons.CALENDAR} Competência:"), 0, 0)
         self.cmb_comp_consol = QComboBox()
         self.cmb_comp_consol.addItem("(todas)")
-        self.cmb_comp_consol.setMinimumWidth(120)
+        self.cmb_comp_consol.setMinimumWidth(96)
         self.cmb_comp_consol.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         filtros_layout.addWidget(self.cmb_comp_consol, 0, 1)
         
@@ -79,7 +79,7 @@ class TabConsolidados(QWidget):
         filtros_layout.addWidget(QLabel(f"{Icons.USER} Vendedor:"), 0, 2)
         self.cmb_vend_consol = QComboBox()
         self.cmb_vend_consol.addItem("(todos)")
-        self.cmb_vend_consol.setMinimumWidth(150)
+        self.cmb_vend_consol.setMinimumWidth(120)
         self.cmb_vend_consol.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         filtros_layout.addWidget(self.cmb_vend_consol, 0, 3, 1, 2)
         
@@ -90,24 +90,24 @@ class TabConsolidados(QWidget):
         
         # Botões de ação (HORIZONTAL)
         btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(8)
+        btn_layout.setSpacing(6)
         btn_layout.addStretch()
 
         self.btn_refresh = QPushButton("Atualizar")
         self.btn_refresh.setObjectName("btnPrimary")
-        self.btn_refresh.setMinimumWidth(120)
+        self.btn_refresh.setMinimumWidth(98)
 
         self.btn_pdf = QPushButton("Gerar PDF")
         self.btn_pdf.setObjectName("btnSuccess")
-        self.btn_pdf.setMinimumWidth(120)
+        self.btn_pdf.setMinimumWidth(96)
 
         self.btn_email = QPushButton("Enviar E-mail")
         self.btn_email.setObjectName("btnSecondary")
-        self.btn_email.setMinimumWidth(120)
+        self.btn_email.setMinimumWidth(110)
 
         self.btn_excluir = QPushButton("Excluir")
         self.btn_excluir.setObjectName("btnDanger")
-        self.btn_excluir.setMinimumWidth(120)
+        self.btn_excluir.setMinimumWidth(92)
 
         btn_layout.addWidget(self.btn_refresh)
         btn_layout.addWidget(self.btn_pdf)
@@ -124,7 +124,7 @@ class TabConsolidados(QWidget):
     
     def _create_table(self, layout):
         """Cria a tabela de consolidados"""
-        self.tbl_consolidados = QTableView()
+        self.tbl_consolidados = ExcelLikeTableView()
         self.tbl_consolidados.horizontalHeader().setStretchLastSection(True)
         self.tbl_consolidados.horizontalHeader().setHighlightSections(False)
         self.tbl_consolidados.setSelectionBehavior(QAbstractItemView.SelectRows)

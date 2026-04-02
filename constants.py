@@ -16,14 +16,14 @@ EMAIL_COPIA_COMISSOES = f"{EMAIL_GESTORA}, {EMAIL_CONTROLADORIA}"
 
 # ======================= Vendedores e E-mails =======================
 VENDEDOR_EMAIL = {
-    "André Ricardo": "ar.pedidos@hotmail.com",
+    "André Ricardo": "gratiamrepresentacoes@gmail.com",
     "Bruno Viana": "bruno.stik@outlook.com",
     "Carlos Pereira": "carlosppeixoto901@gmail.com",
     "Vicente Zepka": "vicentezf@yahoo.com.br",
     "Dijacy Cunha":  "dj.rep@outlook.com",
     "Dionilda Dias": "dionilda.dias@stik.com.br",
     "Eugenio Gomes": "eugeniovendas2005@hotmail.com",
-    "Gustavo La Bella": "llb@llb.com.br",
+    "Gustavo La Bella": "gustavo@llb.com.br",
     "Leudo Neto": "leudorep@yahoo.com.br",
     "Luciano Filho": "lucianodecastrof2@gmail.com",
     "Rafael Torquato": "rafael.rep@icloud.com",

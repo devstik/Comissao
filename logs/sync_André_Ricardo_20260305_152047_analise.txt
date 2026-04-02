@@ -1,0 +1,14 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-03-05 15:20:47
+Período: 01/02/2026 a 28/02/2026
+Vendedor: André Ricardo
+
+RESUMO:
+  Total TopManager: 44
+  Total Comissys: 44
+  Em sincronia: 44
+  Faltando: 0
+  Sobrando: 0
+  Alterados: 0

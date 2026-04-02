@@ -1,0 +1,29 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-04-01 08:28:31
+Período: 01/02/2026 a 28/02/2026
+Vendedor: Suene Salgado
+
+RESUMO:
+  Total TopManager: 154
+  Total Comissys: 154
+  Em sincronia: 154
+  Faltando: 0
+  Sobrando: 0
+  Alterados: 0
+
+TOTAIS (Recebido / Rec.Liq):
+  TopManager: R$ 166.033,36 / R$ 161.550,17
+  Comissys:   R$ 166.033,36 / R$ 161.550,12
+  Diferença:  R$ 0,00 / R$ 0,05
+
+RECEBIDO POR VENDEDOR (TopManager):
+  • Suene Salgado: R$ 166.033,36 (100.0%)
+
+RECEBIDO POR MEIO DE PAGAMENTO:
+  • Crédito em Conta: R$ 71.999,90 (43.4%)
+  • Pix: R$ 42.887,55 (25.8%)
+  • Cheque: R$ 42.290,00 (25.5%)
+  • Depósito em Conta: R$ 7.677,91 (4.6%)
+  • Baixa com Saldo: R$ 1.178,00 (0.7%)

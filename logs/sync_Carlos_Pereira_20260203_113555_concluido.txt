@@ -1,0 +1,20 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - CONCLUIDO
+================================================================================
+Timestamp: 2026-02-03 11:35:55
+Período: 01/01/2026 a 31/01/2026
+Vendedor: Carlos Pereira
+
+RESUMO:
+  Total TopManager: 1025
+  Total Comissys: 1023
+  Em sincronia: 1023
+  Faltando: 2
+  Sobrando: 0
+  Alterados: 0
+
+================================================================================
+TÍTULOS FALTANDO (a adicionar):
+================================================================================
+ID=272508 | Titulo=Stik.167241/1 | Artigo=X Nillo 16 mm | Vendedor=Carlos Pereira | Data=2026-01-26 | RecLiq=446.867718
+ID=272508 | Titulo=Stik.167241/1 | Artigo=X Nillo 25 mm | Vendedor=Carlos Pereira | Data=2026-01-26 | RecLiq=520.904758

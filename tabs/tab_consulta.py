@@ -4,17 +4,18 @@ RESPONSIVA | OTIMIZADA | COM FEEDBACKS | CORRIGIDA v2
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QDateEdit, QSpinBox, QPushButton, QTableView, QMessageBox,
+    QDateEdit, QSpinBox, QPushButton, QMessageBox,
     QHeaderView, QAbstractItemView, QSizePolicy
 )
 from PySide6.QtCore import QDate, Qt, QTimer
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 import pandas as pd
 
 from config import DBConfig, get_conn
-from queries_1 import build_query_866
-from models import EditableTableModel
-from utils.formatters import br_to_decimal, br_to_float, apply_display_formats
+from queries import build_query_866
+from models import EditableTableModel, ExcelLikeTableView
+from utils.extrato_writer import insert_extrato_row
+from utils.formatters import br_to_decimal, apply_display_formats
 from ui.loading_overlay import LoadingOverlay, QuickFeedback
 from ui.icons import Icons, icon_button_text
 
@@ -40,8 +41,8 @@ class TabConsulta(QWidget):
     def _setup_ui(self):
         """Configura a interface da aba"""
         lay = QVBoxLayout(self)
-        lay.setSpacing(10)
-        lay.setContentsMargins(12, 12, 12, 12)
+        lay.setSpacing(8)
+        lay.setContentsMargins(10, 10, 10, 10)
         
         # Container de filtros (RESPONSIVO)
         self._create_filters(lay)
@@ -67,8 +68,8 @@ class TabConsulta(QWidget):
         # Grid layout para responsividade
         from PySide6.QtWidgets import QGridLayout
         filtros_layout = QGridLayout(filtros_container)
-        filtros_layout.setSpacing(10)
-        filtros_layout.setContentsMargins(16, 12, 16, 12)
+        filtros_layout.setSpacing(8)
+        filtros_layout.setContentsMargins(12, 10, 12, 10)
 
         # LINHA 0
         row = 0
@@ -97,7 +98,7 @@ class TabConsulta(QWidget):
         filtros_layout.addWidget(QLabel(f"{Icons.USER} Vendedor:"), row, 0)
         self.cmb_vendedor = QComboBox()
         self.cmb_vendedor.addItem("(todos)")
-        self.cmb_vendedor.setMinimumWidth(150)
+        self.cmb_vendedor.setMinimumWidth(112)
         self.cmb_vendedor.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         filtros_layout.addWidget(self.cmb_vendedor, row, 1, 1, 2)
 
@@ -105,7 +106,7 @@ class TabConsulta(QWidget):
         filtros_layout.addWidget(QLabel(f"{Icons.FILTER} Artigo:"), row, 3)
         self.cmb_artigo = QComboBox()
         self.cmb_artigo.addItem("(todos)")
-        self.cmb_artigo.setMinimumWidth(180)
+        self.cmb_artigo.setMinimumWidth(132)
         self.cmb_artigo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         filtros_layout.addWidget(self.cmb_artigo, row, 4, 1, 2)
 
@@ -113,13 +114,15 @@ class TabConsulta(QWidget):
         filtros_layout.addWidget(QLabel(f"{Icons.CHART} % padrão:"), row, 6)
         self.spn_pct = QSpinBox()
         self.spn_pct.setRange(0, 100)
-        self.spn_pct.setValue(5)
-        self.spn_pct.setFixedWidth(70)
+        self.spn_pct.setValue(0)
+        self.spn_pct.setFixedWidth(58)
         filtros_layout.addWidget(self.spn_pct, row, 7)
-        
+
         # Permite que as colunas se expandam
         filtros_layout.setColumnStretch(1, 1)
         filtros_layout.setColumnStretch(4, 1)
+        filtros_layout.setColumnMinimumWidth(3, 74)
+        filtros_layout.setColumnMinimumWidth(6, 72)
         
         layout.addWidget(filtros_container)
     
@@ -127,17 +130,17 @@ class TabConsulta(QWidget):
         """Cria os botões de ação"""
         
         btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(8)
+        btn_layout.setSpacing(6)
         btn_layout.addStretch()
 
         self.btn_buscar = QPushButton("Buscar")
         self.btn_buscar.setObjectName("btnPrimary")
-        self.btn_buscar.setMinimumWidth(120)
+        self.btn_buscar.setMinimumWidth(96)
         self.btn_buscar.clicked.connect(self.on_buscar)
 
         self.btn_add = QPushButton("Adicionar ao Extrato")
         self.btn_add.setObjectName("btnSuccess")
-        self.btn_add.setMinimumWidth(160)
+        self.btn_add.setMinimumWidth(132)
         self.btn_add.clicked.connect(self.add_to_extrato)
         
         btn_layout.addWidget(self.btn_buscar)
@@ -147,7 +150,7 @@ class TabConsulta(QWidget):
 
     def _create_table(self, layout):
         """Cria a tabela de resultados"""
-        self.tbl = QTableView()
+        self.tbl = ExcelLikeTableView()
         self.tbl.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tbl.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tbl.horizontalHeader().setStretchLastSection(True)
@@ -378,7 +381,7 @@ class TabConsulta(QWidget):
 
         # Adiciona % Comissão e Observação
         if "% Comissão" not in df.columns:
-            df["% Comissão"] = float(self.spn_pct.value())
+            df["% Comissão"] = df["% Percentual Padrão"].astype(float)  # Inicializa com o valor padrão
         if "Observação" not in df.columns:
             df["Observação"] = ""
 
@@ -465,60 +468,11 @@ class TabConsulta(QWidget):
 
                     row = mt.iloc[0].to_dict()
 
-                    pct = br_to_decimal(view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else row.get("% Comissão",0), 4) or Decimal('0.0000')
-                    pct_padrao = br_to_decimal(row.get("Percentual_Comissao") or row.get("% Percentual Padrão") or 0.01, 4)
-                    
-                    recebido = br_to_decimal(row.get("Recebido", 0), 2) or Decimal('0.00')
-                    icmsst = br_to_decimal(row.get("ICMSST", 0), 2) or Decimal('0.00')
-                    frete = br_to_decimal(row.get("Frete", 0), 2) or Decimal('0.00')
-
-                    # Calcula Rec Liquido COM valores já arredondados (igual TopManager)
-                    rec_liq = (recebido - icmsst - frete).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-                    # Calcula comissão sobre o valor líquido arredondado
-                    valor_com = (rec_liq * pct / Decimal('100')).quantize(
-                        Decimal('0.01'), 
-                        rounding=ROUND_HALF_UP
-                    )
-
-                    comp_iso = pd.to_datetime(row.get("Recebimento"), dayfirst=True, errors="coerce")
-                    comp_iso = comp_iso.strftime("%Y-%m") if pd.notna(comp_iso) else None
-
-                    # Insert no banco
-                    cur.execute("""
-                        INSERT INTO dbo.Stik_Extrato_Comissoes (
-                            Competencia, Doc, Cliente, Artigo, Linha, UF,
-                            DataRecebimento, RecebimentoLiq, PercComissao, ValorComissao,
-                            Observacao, CriadoPor,
-                            VendedorID, Vendedor, Titulo, MeioPagamento,
-                            Emissao, Vencimento, Recebido, ICMSST, Frete,
-                            PrecoMedio, PrecoVenda, PrazoMedio, Percentual_Comissao,
-                            Validado, ValidadoPor, ValidadoEm, Consolidado
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,'PySide6-App',
-                                 ?,?,?,?,?,?,?,?,?,?,?,?,?, 0, NULL, NULL, 0)
-                    """,
-                        comp_iso,
-                        int(str(row.get("ID", 0)) or 0),
-                        str(row.get("Cliente", ""))[:200],
-                        str(row.get("Artigo", ""))[:200],
-                        str(row.get("Linha", ""))[:200],
-                        str(row.get("UF", ""))[:2],
-                        pd.to_datetime(row.get("Recebimento"), dayfirst=True, errors="coerce").date(),
-                        rec_liq, pct, valor_com,
-                        str(row.get("Observação", ""))[:500],
-                        int(br_to_float(row.get("VendedorID", 0))) or None,
-                        str(row.get("Vendedor", ""))[:200] or None,
-                        str(row.get("Titulo", ""))[:120] or None,
-                        str(row.get("M Pagamento", ""))[:100] or None,
-                        pd.to_datetime(row.get("Emissão"), dayfirst=True, errors="coerce").date() if row.get("Emissão") else None,
-                        pd.to_datetime(row.get("Vencimento"), dayfirst=True, errors="coerce").date() if row.get("Vencimento") else None,
-                        br_to_decimal(row.get("Recebido", 0), 2),
-                        br_to_decimal(row.get("ICMSST", 0), 2),
-                        br_to_decimal(row.get("Frete", 0), 2),
-                        br_to_decimal(row.get("Preço Médio", 0), 4),
-                        br_to_decimal(row.get("Preço Venda", 0), 4),
-                        br_to_decimal(row.get("Prazo Médio", 0), 2),
-                        pct_padrao
+                    insert_extrato_row(
+                        cur,
+                        row,
+                        pct_comissao=view_row[ix["% Comissão"]] if ix["% Comissão"] is not None else row.get("% Comissão", 0),
+                        criado_por="PySide6-App",
                     )
                     
                     inserted += 1

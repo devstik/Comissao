@@ -1,0 +1,30 @@
+================================================================================
+RELATÓRIO DE SINCRONIZAÇÃO - ANALISE
+================================================================================
+Timestamp: 2026-02-03 11:41:19
+Período: 01/01/2026 a 31/01/2026
+Vendedor: Dionilda Dias
+
+RESUMO:
+  Total TopManager: 201
+  Total Comissys: 201
+  Em sincronia: 197
+  Faltando: 4
+  Sobrando: 4
+  Alterados: 0
+
+================================================================================
+TÍTULOS FALTANDO (a adicionar):
+================================================================================
+ID=266636 | Titulo=Stik.163272/1 | Artigo=Kiss 40 mm | Vendedor=Dionilda Dias | Data=2026-01-26 | RecLiq=5870.820000
+ID=266423 | Titulo=Stik.163125/1 | Artigo=Kiss 40 mm | Vendedor=Dionilda Dias | Data=2026-01-26 | RecLiq=7579.500000
+ID=266635 | Titulo=Stik.163271/1 | Artigo=Kiss 40 mm | Vendedor=Dionilda Dias | Data=2026-01-26 | RecLiq=1519.680000
+ID=271752 | Titulo=Stik.76485/1 | Artigo=Kiss 30 mm | Vendedor=Dionilda Dias | Data=2026-01-27 | RecLiq=15402.907776
+
+================================================================================
+TÍTULOS SOBRANDO (a remover):
+================================================================================
+DBId=42088 | ID=268728 | Titulo=Stik.164656/1 | Artigo=Kiss 40 mm | Vendedor=Dionilda Dias | Data=2026-01-19
+DBId=44191 | ID=271752 | Titulo=Stik.76485/1 | Artigo=Kiss 30 mm | Vendedor=Dionilda Dias | Data=2026-01-20
+DBId=42106 | ID=272411 | Titulo=Stik.76651/1 | Artigo=Magno 14 UP mm | Vendedor=Dionilda Dias | Data=2026-01-12
+DBId=42156 | ID=272411 | Titulo=Stik.76651/1 | Artigo=Magno 18 UP mm | Vendedor=Dionilda Dias | Data=2026-01-12
